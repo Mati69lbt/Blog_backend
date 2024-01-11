@@ -1,0 +1,573 @@
+Se instalo:
+cors, express, mongoose, multer(subir archivos e imagenes), validator
+npm install dependencia --save
+se instalo nodemon
+npm install nodemon --save-dev
+
+
+1 nos conectamos a mongoose
+const mongoose = require("mongoose");
+
+2 tambien hacemos la conexion con mongo y lo exportamos 
+const conexion = async () => {
+  try {
+    await mongoose.connect(
+      "mongodb+srv://mati69lbt:z*jjM_qYpMW2p2B@cluster0.aitgwd6.mongodb.net/mi_blog"
+    );
+
+    console.log("Conectado Exitosamente a la Base de Datods de mi_blog!!!");
+  } catch (error) {
+    console.log(error);
+    throw new Error("No se pudo conectar a la Base de Datos");
+  }
+};
+
+module.exports = {
+  conexion,
+};
+
+3 creamos el script con nodemon 
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
+  },
+
+4 pruebas de funcionamiento
+const { conexion } = require("./database/conexion");
+
+console.log("App de Node Arrancando");
+
+conexion();
+
+En la consola ponemos: $ npm start
+
+[nodemon] starting `node index.js`
+App de Node Arrancando
+Conectado Exitosamente a la Base de Datods de mi_blog!!!
+
+listo!!! 
+
+5 Crear un servidor de node
+const express = require("express");
+const app = express();
+//Configurar cors
+const cors = require("cors");app.use(cors())7
+//Convertir body a objeto js
+app.use(express.json()); //recibir datos con content-type app/json
+app.use(express.urlencoded({extended:true})) //facilita la manipulaci�n de datos de formulario codificados en URL enviados a tu aplicaci�n, permiti�ndote acceder a ellos de manera m�s sencilla en tu c�digo.
+
+6 Crear servidor y escuchar peticiones http
+const puerto = 3900
+app.listen(puerto, () => console.log("Server Listening on port " + puerto));
+
+7 ejemplo de ruta get
+app.get("/probando", (req, res) => {
+  console.log("Se ejecuto el endpoint probando");
+  return res.status(200).send(`
+  <div>
+  <h1>Probando ruta node.js</h1>
+  <p>Crando api Res</p>
+  <ul>
+  <li>React</li>
+  <li>JS</li>
+  <li>Express</li>
+  </ul>
+  </div>
+  `)
+});
+
+8 Crear un modelo modelos\Articulo.js
+const { Schema } = require("mongoose");
+
+const ArticuloSchema = Schema({
+  titulo: { type: String, required: true },
+  contenido: {
+    type: String,
+    required: true,
+  },
+
+  fecha: {
+    type: Date,
+    default: Date.now(),
+  },
+  imagen: {
+    type: String,
+    default: "default.png",
+  },
+});
+
+module.exports = model("Articulo", ArticuloSchema, "articulos");
+
+9 crear un controlador controladores\Articulo.js
+const prueba = (req, res) => {
+  return res.satus(200).json({
+    mensaje: "Soy una accion de prueba en mi controlador de articulos",
+  });
+};
+
+module.exports = {
+  prueba,
+};
+
+10 Crear Ruta rutas\Articulos.js
+const { Router } = require("express");
+const router = Router();
+
+const ArticuloControlador = require("../controladores/Articulo");
+
+//Rutas de prueba
+router.get("/ruta-de-prueba", ArticuloControlador.prueba);
+
+module.exports = router;
+
+11 definir y hacer q funciones las rutas index.js
+//Rutas
+const rutas_articulo = require("./rutas/Articulos")
+//Cargar las rutas
+app.use("/api", rutas_articulo);
+
+EJEMPLO PRACTICO
+12 controladores\Articulo.js
+const crear_articulo = (req, res) => {
+  return res.status(200).json({
+    mensaje: "Accion de guardar"
+  })
+};
+
+module.exports = {
+  crear_articulo,
+};
+
+13
+const ArticuloControlador = require("../controladores/Articulo");
+router.post("/crear", ArticuloControlador.crear_articulo);
+
+14 sigue igual que antes
+//Rutas
+const rutas_articulo = require("./rutas/Articulos")
+//Cargar las rutas
+app.use("/api", rutas_articulo);
+
+15 Validar los datos en el controladores\Articulo.js
+const validator = require("validator");
+const crear_articulo = (req, res) => {
+  //recoger parametros por post a guardar
+  let parametros = req.body;
+  //validar los datos con validaor
+  try {
+    let validar_titulo =
+      !validator.isEmpty(parametros.titulo) &&
+      validator.isLength(parametros.titulo, { min: 5, max: undefined });
+    let validar_contenido = !validator.isEmpty(parametros.contenido);
+    if (!validar_titulo || !validar_contenido) {
+      throw new Error("No se ha validado la Informacion!");
+    }
+  } catch (error) {
+    return res.status(400).json({
+      status: "error",
+      mensaje: "Faltan datos por enviar",
+    });
+  }
+  return res.status(200).json({
+    mensaje: "Accion de guardar",
+    parametros,
+  });
+};
+
+16 gardamos los parametros en el modelo que habiamos creado controladores\Articulo.js
+const crear_articulo = async (req, res) => {
+  //recoger parametros por post a guardar
+  let parametros = req.body;
+  //validar los datos con validaor
+  try {
+    let validar_titulo =
+      !validator.isEmpty(parametros.titulo) &&
+      validator.isLength(parametros.titulo, { min: 5, max: undefined });
+    let validar_contenido = !validator.isEmpty(parametros.contenido);
+    if (!validar_titulo || !validar_contenido) {
+      throw new Error("No se ha validado la Informacion!");
+    }
+  } catch (error) {
+    return res.status(400).json({
+      status: "error",
+      mensaje: "Faltan datos por enviar",
+    });
+  }
+
+  //Crear el objeto a guardar
+  const articulo = new Articulo(parametros); //asi se guarda todo automaticamente
+  //asignar valores a objeto basado en el modelo (manual o automatico)
+  //articulo.titulo = parametros.titulo; --- de forma manual, pero tardariamos mucho si tendriamos muchos parametros
+
+  //Guardar el articulo en la base de datos
+  // el metodo de abajo esta deprecado
+  // //   articulo.save((err, articuloGuardado) => {
+  // //     if (err || !articuloGuardado) {
+  // //       return res.status(400).json({
+  // //         status: "error",
+  // //         mensaje: "Error al guardar el art�culo",
+  // //         });
+  // //         }
+  // //   return res.status(200).json({
+  // //     status: "success",
+  // //     articulo: articuloGuardado,
+  // //     mensaje: "articulo guardado con exito!!!"
+  // //   });
+  // // });
+
+  // nuevo metodo de guardado
+  try {
+    const articuloGuardado = await articulo.save();
+    return res.status(200).json({
+      status: "succes",
+      articulo: articuloGuardado,
+      mensaje: "Art�culo guardado con exito",
+    });
+  } catch (error) {
+    return res.status(400).json({
+      status: "error",
+      mensaje: "Error al guardar el art�culo",
+    });
+  }
+};
+
+module.exports = {
+  crear_articulo,
+};
+
+en rutas\Articulos.js
+router.post("/crear", ArticuloControlador.crear_articulo);
+
+17 Taer todos los articulos controladores\Articulo.js
+const conseguir_articulos = async (req, res) => {
+  try {
+    const articulos = await Articulo.find({}).exec();
+
+    if (!articulos || articulos.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "No se encontraron art�culos",
+      });
+    }
+    return res.status(200).json({
+      status: "sucess",
+      articulos,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      mensaje: "Error al obtener los art�culos",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = {
+  conseguir_articulos,
+};
+
+en rutas\Articulos.js
+router.get("/articulos", ArticuloControlador.conseguir_articulos);
+
+18 traer la cantidad de articulos que querramos, es parecido al anterior con algunas cositas nuevas, como en el endpoint q ponemos el numero
+controladores\Articulo.js
+const listar_articulos = async (req, res) => {
+  const parametros_url = req.params.ultimos;
+
+  try {
+    let busqueda = Articulo.find({});
+
+    if (parametros_url) {
+      busqueda = busqueda.limit(parseInt(parametros_url));
+    }
+
+    const articulos = await busqueda.sort({ fecha: 1 }).exec();
+
+    if (!articulos || articulos.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "No hay art�culos en la base de datos",
+        error: error.message,
+      });
+    }
+    res.status(200).json({
+      status: "succes",
+      parametros_url: parametros_url,
+      contador: articulos.length,
+      articulos,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Error al obtener articulos",
+      error: error.message,
+    });
+  }
+};
+module.exports = {
+  listar_articulos,
+};
+
+rutas\Articulos.js
+const ArticuloControlador = require("../controladores/Articulo");
+router.get("/articulos/:ultimos?", ArticuloControlador.listar_articulos);
+
+19 seleccionar un solo articulo
+controladores\Articulo.js
+const sacar_un_solo_articulo = async (req, res) => {
+  // recoger id de la url
+  let id = req.params.id;
+  // buscar el articulo
+let articulo; 
+  try {
+    articulo = await Articulo.findById(id);
+    
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Error al buscar el art�culo",
+      error: error.message,
+    });
+  }
+
+  if (!articulo) {
+    return res.status(404).json({
+      status: "error",
+      message: "El art�culo no existe",
+    });
+  } else {
+    res.status(200).json({
+      status: "success",
+      consulta: id,
+      articulo,
+    });
+  }
+};
+
+rutas\Articulos.js
+const ArticuloControlador = require("../controladores/Articulo");
+router.get("/articulo/:id", ArticuloControlador.sacar_un_solo_articulo);
+
+20 Borrar un articulo
+const borrar_articulo = async (req, res) => {
+  let id_params = req.params.id;
+
+  let articulo;
+
+  try {
+    articulo = await Articulo.findOneAndDelete({ _id: id_params });
+  } catch (error) {
+    return res.status(400).json({
+      status: "error",
+      message: "No se ha podido eliminar el art�culo",
+      error: error.message,
+    });
+  }
+
+  if (!articulo) {
+    return res.status(404).json({
+      status: "error",
+      message: "El art�culo no existe",
+    });
+  }
+  return res.status(200).json({
+    status: "success",
+    message: "metodo de borrar aprobado",
+    id,
+    articulo
+  });
+};
+
+21 Editar un articulo
+controladores\Articulo.js
+const editar_articulo = async (req, res) => {
+  let id_articulo = req.params.id;
+
+  let parametros = req.body;
+
+  try {
+    let validar_titulo =
+      !validator.isEmpty(parametros.titulo) &&
+      validator.isLength(parametros.titulo, { min: 5, max: undefined });
+    let validar_contenido = !validator.isEmpty(parametros.contenido);
+    if (!validar_titulo || !validar_contenido) {
+      throw new Error("No se ha validado la Informacion!");
+    }
+    //Buscar y actualizar el articulo
+    const articulo_Actualizado = await Articulo.findOneAndUpdate(
+      { _id: id_articulo },
+      parametros,
+      { new: true }
+    );
+
+    if (!articulo_Actualizado) {
+      return res.status(404).json({
+        status: "Error",
+        Mensaje: "El art�culo no existe en la base de Datos",
+      });
+    } else {
+      res.status(201).json({
+        status: "Exito",
+        articulo: articulo_Actualizado,
+      });
+    }
+  } catch (error) {
+    return res.status(400).json({
+      status: "error",
+      mensaje: "Faltan datos por enviar",
+      error: error.message,
+    });
+  }
+};
+
+rutas\Articulos.js
+const ArticuloControlador = require("../controladores/Articulo");
+router.put("/articulo/:id", ArticuloControlador.editar_articulo);
+
+22 subir imagen
+rutas\Articulos.js
+// //uso del middleware Multer
+const multer = require("multer");
+// //configuracion
+const almacenamiento = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./imagenes/articulos/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, "articulo" + Date.now() + file.originalname);
+  },
+});
+// // Middleware Multer:
+const imagenes_subidas = multer({ storage: almacenamiento });
+// // Ruta de Express:
+router.post(
+  "/subir-imagen/:id",
+  [imagenes_subidas.single("file0")],
+  ArticuloControlador.subir_imagenes
+);
+
+controladores\Articulo.js
+const fs = require("fs");
+
+const subir_imagenes = async (req, res) => {
+  if (!req.file ) {
+    return res.status(400).send({
+      status: "Error",
+      message: "No has subido ninguna imagen",
+    });
+  }
+
+ //Nombre del archivo
+  let nombreImagen = req.file.originalname;
+
+  //obtener la extension del archivo
+  let archivo_split = nombreImagen.split(".");
+  let extension_archivo = archivo_split[1].toLowerCase();
+
+  const extesiones_permitidas = ["png", "jpg", "jpeg", "gif"].map((ext) =>
+    ext.toLowerCase()
+  );
+// comprobar extension correcta
+  if (!extesiones_permitidas.includes(extension_archivo)) {
+    // borrar archivo y enviar respuesta
+    fs.unlink(req.file.path, (error) => {
+      return res.status(400).json({
+        status: "Error",
+        mensaje: "La extensi�n del archivo no es validad",
+      });
+    });
+  } else {
+    let articulo_id = req.params.id;
+    try {
+      const articulo_Actualizado = await Articulo.findOneAndUpdate(
+        { _id: articulo_id },
+        { imagen: req.file.filename },
+        { new: true }
+      );
+
+      if (!articulo_Actualizado) {
+        return res.status(404).json({
+          status: "Error",
+          Mensaje: "El art�culo no existe en la base de Datos",
+        });
+      } else {
+        res.status(201).json({
+          status: "Exito",
+          mensaje: "Imagen actualizada correctamente",
+          articulo: articulo_Actualizado,
+        });
+      }
+    } catch (error) {
+      return res.status(500).json({
+        status: "error",
+        mensaje: "Faltan datos por enviar",
+        error: error.message,
+      });
+    }
+  }
+}
+
+23 obtener una sola imagen
+rutas\Articulos.js
+router.get("/imagen/:fichero", ArticuloControlador.imagen);
+
+controladores\Articulo.js
+const imagen = async (req, res) => {
+  let fichero = req.params.fichero;
+  let ruta_fisica = "./imagenes/articulos/" + fichero;
+  fs.stat(ruta_fisica, (error, existe) => {
+    if (existe) {
+      return res.sendFile(path.resolve(ruta_fisica));
+    } else {
+      return res.status(404).json({
+        status: "Error",
+        Mensaje: "La imagen no se encuentra disponible",
+        existe,
+        fichero,
+        ruta_fisica,
+      });
+    }
+  });
+};
+
+
+24 buscador de articulos unico
+router.get("/buscar/:busqueda", ArticuloControlador.buscador);
+
+controladores\Articulo.js
+const buscador = async (req, res) => {
+  let busqueda = req.params.busqueda;
+
+  const articulo = Articulo.find({
+    $or: [
+      { titulo: { $regex: busqueda, $options: "i" } },
+      { contenido: { $regex: busqueda, $options: "i" } },
+    ],
+  });
+  const articulo_encontrado = await articulo.sort({ fecha: -1 }).exec();
+  if (!articulo_encontrado || articulo_encontrado.length === 0) {
+    return res.status(404).json({
+      status: "error",
+      message: "No hay art�culos en la base de datos",
+    });
+  } else {
+    res.status(200).json({
+      status: "succes",
+      articulo_encontrado,
+    });
+  }
+};
+
+25 asi quedo el exportador de controladores\Articulo.js
+module.exports = {
+  prueba,
+  crear_articulo,
+  listar_articulos,
+  sacar_un_solo_articulo,
+  borrar_articulo,
+  editar_articulo,
+  subir_imagenes,
+  imagen,
+  buscador,
+};
+
