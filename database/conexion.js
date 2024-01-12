@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
-const mongodbUri = import.meta.env.VITE_MONGODB_URI;
+const mongodbUri = process.env.MONGODB_URI;
 
 const conexion = async () => {
   try {
-    await mongoose.connect({ mongodbUri });
+    await mongoose.connect(mongodbUri);
 
     console.log("Conectado Exitosamente a la Base de Datods de mi_blog!!!");
   } catch (error) {
